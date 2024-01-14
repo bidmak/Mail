@@ -6,42 +6,11 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
   document.querySelector('#compose').addEventListener('click', compose_email);
 
-  // Loads email when clicked and set archive.
-  document.querySelector('#emails-view').addEventListener('click', process_email);
-
   // Handles sending an email
   document.querySelector('#compose-form').addEventListener('submit', send_email);
 
   load_mailbox('inbox');
 });
-
-async function process_email(event) {
-  const content = event.target;
-  const emailItem = content.closest('.list-group-item');
-  const isArchive = content.id === 'archive-button';
-  if (emailItem || isArchive) {
-    const id = emailItem ?  emailItem.dataset.emailid : content.dataset.emailid;
-    const emailContents = await get_email(id);
-
-    if (isArchive) {
-      await set_archive(id, emailContents.archived);
-      load_mailbox('inbox');
-    } else {
-      view_email(emailContents);
-    }
-    
-  }  
-}
-
-async function get_email(emailId) {
-  try {
-    const response = await fetch(`emails/${emailId}`);
-    return await response.json();
-  } catch (error) {
-    console.error('Error loading email:', error);
-    throw error;
-  } 
-}
 
 function email_to_read(emailId) {
   fetch(`emails/${emailId}`, {
@@ -66,12 +35,12 @@ async function set_archive(emailId, isArchived) {
   }
 }
 
-async function get_mailcontent(mailbox) {
+async function get_mail(mail) {
   try {
-    const response = await fetch(`emails/${mailbox}`);
+    const response = await fetch(`emails/${mail}`);
     return await response.json();
   } catch (error) {
-    console.error('Error getting mailbox:', error);
+    console.error('Error getting mail:', error);
     throw error;
   }
 }
@@ -86,8 +55,8 @@ async function load_mailbox(mailbox) {
   document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
   
   // Get mailbox content and view mailbox
-  const mail = await get_mailcontent(mailbox);
-  view_mailcontent(mail);
+  const mails = await get_mail(mailbox);
+  view_mailbox(mails);
 
 }
 
@@ -97,21 +66,23 @@ function view_email(content) {
     child.style.display = 'none';
   });
 
+  const parentDiv = document.querySelector('#emails-view');
+
   // Create the email view div
   const emailViewDiv = createElementClassWithContent('div', '');
-
-  const mailbox = document.querySelector('#emails-view > h3');
-  if (mailbox.innerHTML != 'Sent') {
+  
+  if (document.querySelector('#emails-view > h3').innerHTML != 'Sent') {
     const archiveButton = createElementClassWithContent('button', 'btn btn-sm');
 
-    archiveButton.setAttribute('type', 'button');
-    archiveButton.setAttribute('id', 'archive-button');
-    archiveButton.setAttribute("data-emailid", content.id);
-  
+    archiveButton.setAttribute('type', 'button');  
     archiveButton.classList.add(content.archived ? 'btn-secondary' : 'btn-outline-danger');
     archiveButton.innerText = content.archived ? 'Unarchive' : 'Archive';
-  
-    emailViewDiv.appendChild(archiveButton);
+
+    archiveButton.addEventListener('click', async () => {
+      await set_archive(content.id, content.archived);
+      load_mailbox('inbox');
+    });
+    parentDiv.appendChild(archiveButton);
   }
 
   // Populate the email view div with content
@@ -124,22 +95,21 @@ function view_email(content) {
     <hr>
     ${content.body.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')}
   `;
-
-  // Append the email view div to #emails-view
-  document.querySelector('#emails-view').appendChild(emailViewDiv);
+  parentDiv.appendChild(emailViewDiv);
 
   // Set the email to read
-  email_to_read(content.id);
+  if (!content.read) {
+    email_to_read(content.id);
+  }
   
 }
 
-function view_mailcontent(mailContents) {
+function view_mailbox(mailContents) {
   const emailDiv = createElementClassWithContent('div', 'list-group');
   document.querySelector('#emails-view').appendChild(emailDiv);
 
   mailContents.forEach(email => {
     const emailLink = createElementClassWithContent('a', 'list-group-item list-group-item-action');
-    emailLink.setAttribute("data-emailid", email.id);
 
     const subDiv = createElementClassWithContent('div', 'd-flex w-100 justify-content-between');
     appendChildren(emailLink, subDiv);
@@ -168,6 +138,7 @@ function view_mailcontent(mailContents) {
     }
 
     emailDiv.appendChild(emailLink);
+    emailLink.addEventListener('click', () => view_email(email));
   });
 }
 
