@@ -16,6 +16,7 @@ class Email(models.Model):
     read = models.BooleanField(default=False)
     archived = models.BooleanField(default=False)
 
+    # TODO - Add username to the api object.
     def serialize(self):
         return {
             "id": self.id,
@@ -27,3 +28,17 @@ class Email(models.Model):
             "read": self.read,
             "archived": self.archived
         }
+    
+    def __str__(self):
+        def get_username(email):
+            if '@' in email:
+                username, domain = email.split('@', 1)
+            else:
+                username = email
+            return username
+        sender = get_username(self.sender.email)
+        recipient = get_username(self.recipients.first().email)
+        
+        return f"{self.id}: Email from {sender.title()} to {recipient.title()}"
+
+    

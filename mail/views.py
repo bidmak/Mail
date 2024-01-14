@@ -34,7 +34,7 @@ def compose(request):
     emails = [email.strip() for email in data.get("recipients").split(",")]
     if emails == [""]:
         return JsonResponse({
-            "error": "At least one recipient required."
+            "error": "At least one recipient required"
         }, status=400)
 
     # Convert email addresses to users
@@ -45,7 +45,7 @@ def compose(request):
             recipients.append(user)
         except User.DoesNotExist:
             return JsonResponse({
-                "error": f"User with email {email} does not exist."
+                "error": f"User with email {email} does not exist"
             }, status=400)
 
     # Get contents of email
@@ -60,8 +60,8 @@ def compose(request):
         email = Email(
             user=user,
             sender=request.user,
-            subject=subject,
-            body=body,
+            subject=subject.strip(),
+            body=body.strip(),
             read=user == request.user
         )
         email.save()
@@ -177,3 +177,4 @@ def register(request):
         return HttpResponseRedirect(reverse("index"))
     else:
         return render(request, "mail/register.html")
+
