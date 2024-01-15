@@ -67,15 +67,18 @@ function view_email(content) {
   });
 
   const parentDiv = document.querySelector('#emails-view');
+  
+  // Reply button
+  const replyButton = createElementClassWithContent('button', 'btn btn-sm btn-outline-success mr-1 mb-3');
+  replyButton.innerText = 'Reply';
 
-  // Create the email view div
-  const emailViewDiv = createElementClassWithContent('div', '');
+  replyButton.addEventListener('click', () => reply_email(content));
+  parentDiv.appendChild(replyButton);
   
   if (document.querySelector('#emails-view > h3').innerHTML != 'Sent') {
-    const archiveButton = createElementClassWithContent('button', 'btn btn-sm');
+    const archiveButton = createElementClassWithContent('button', 'btn btn-sm mb-3');
 
-    archiveButton.setAttribute('type', 'button');  
-    archiveButton.classList.add(content.archived ? 'btn-secondary' : 'btn-outline-danger');
+    archiveButton.classList.add(content.archived ? 'btn-outline-secondary' : 'btn-outline-danger');
     archiveButton.innerText = content.archived ? 'Unarchive' : 'Archive';
 
     archiveButton.addEventListener('click', async () => {
@@ -85,23 +88,58 @@ function view_email(content) {
     parentDiv.appendChild(archiveButton);
   }
 
-  // Populate the email view div with content
-  emailViewDiv.innerHTML += `
-    <hr>
+  const ul = createElementClassWithContent('ul', 'list-group');
+  const header = createElementClassWithContent('li', 'list-group-item');
+  const body = createElementClassWithContent('li', 'list-group-item');
+  appendChildren(ul, header, body);
+  parentDiv.appendChild(ul);
+
+  let emailBody = content.body;
+  const pattern = /On (\w+ \d{2} \d{4}, \d{2}:\d{2} (?:AM|PM)), (\w+@[\w.]+) wrote:/g;
+  const matches = emailBody.match(pattern);
+  if (matches) {
+    matches.forEach(match => {
+      const preEmail = `<span class="text-primary">${match}</span>`;
+      emailBody = emailBody.replace(match, preEmail);
+    })    
+  }
+
+  // Populate the email header with the corresponding details
+  header.innerHTML = `
     <strong>From</strong>: ${content.sender}<br>
     <strong>To</strong>: ${content.recipients.join(', ')}<br>
-    <strong>Subject</strong>: ${content.subject}<br>
     <strong>Time</strong>: ${content.timestamp}<br>
-    <hr>
-    ${content.body.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')}
+    <strong>Subject</strong>: ${content.subject}<br>
   `;
-  parentDiv.appendChild(emailViewDiv);
+
+  // Populate the email body
+  body.innerHTML = `
+    <br>
+    ${emailBody.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')}
+  `;
 
   // Set the email to read
   if (!content.read) {
     email_to_read(content.id);
   }
   
+}
+
+function reply_email(email) {
+  compose_email()
+  
+  document.querySelector('#compose-recipients').value = email.sender;
+
+  const subject = document.querySelector('#compose-subject');
+  subject.value = email.subject.startsWith('Re:') ? email.subject : `Re: ${email.subject}`;
+
+  const body = document.querySelector('#compose-body');
+  body.value = `\n\nOn ${email.timestamp}, ${email.sender} wrote:\n${email.body}`;
+
+  body.focus();
+  body.setSelectionRange(0, 0);
+  body.scrollTop = 0;
+
 }
 
 function view_mailbox(mailContents) {
@@ -169,8 +207,12 @@ function send_email(event) {
       setValueToEmpty(['compose-recipients', 'compose-subject', 'compose-body']);
       load_mailbox('sent');
     } else {
-        // Handle error
-        alert(`${result.error}, please try again.`)
+      // Using bootstrap toast to show error message.
+      const toastBody = document.querySelector('.toast-body');
+      toastBody.textContent = `${result.error}, please try again.`;        
+      const toast = document.getElementById('liveToast');
+      const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toast);
+      toastBootstrap.show();
     }
   })
   .catch(error => {

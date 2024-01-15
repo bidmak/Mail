@@ -2,6 +2,17 @@
 {% load static %}
 
 {% block body %}
+    <div class="toast-container position-fixed top-0 start-50 translate-middle-x p-1">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Error sending email</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+            </div>
+        </div>
+    </div>
+
     <h2>{{ request.user.email }}</h2>
 
     <button class="btn btn-sm btn-outline-primary" id="inbox">Inbox</button>
@@ -26,10 +37,13 @@
             <div class="form-group">
                 <input class="form-control" id="compose-subject" placeholder="Subject" maxlength="255">
             </div>
-            <textarea class="form-control" id="compose-body" placeholder="Body"></textarea>
-            <input type="submit" class="btn btn-primary"/>
+            <textarea class="form-control" rows="15" id="compose-body" placeholder="Body"></textarea>
+            <input type="submit" class="btn btn-primary my-2"/>
         </form>
     </div>
+    <script>
+        
+    </script>
 {% endblock %}
 
 {% block script %}
