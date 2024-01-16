@@ -1,4 +1,4 @@
-# Project 3: Email Client Readme
+# Mail: Single-page app 
 
 ## Overview
 
